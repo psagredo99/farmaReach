@@ -1,4 +1,14 @@
 const API_BASE = (window.__API_BASE__ || '').trim();
+const API_LOG_NS = '[api]';
+
+function logApi(level, message, meta) {
+  const ts = new Date().toISOString();
+  if (meta !== undefined) {
+    console[level](`${API_LOG_NS} ${ts} ${message}`, meta);
+    return;
+  }
+  console[level](`${API_LOG_NS} ${ts} ${message}`);
+}
 
 function sourceToApi(source) {
   if (source === 'google') return 'google_maps';
@@ -57,12 +67,15 @@ async function apiGet(path, params) {
       if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
     });
   }
+  logApi('info', `GET ${path} start`);
 
   const res = await fetch(url.toString(), {
     headers: authHeaders(),
   });
+  logApi('info', `GET ${path} -> ${res.status}`);
   if (res.status === 401) {
     onUnauthorized();
+    logApi('warn', `GET ${path} unauthorized`);
     throw new Error('Sesion expirada. Vuelve a iniciar sesion.');
   }
   if (!res.ok) {
@@ -71,20 +84,34 @@ async function apiGet(path, params) {
       const payload = await res.json();
       if (payload.detail) detail = payload.detail;
     } catch (_) {}
+    logApi('error', `GET ${path} failed`, { status: res.status, detail });
     throw new Error(detail);
   }
   return res.json();
 }
 
 async function apiPost(path, body) {
+  logApi('info', `POST ${path} start`);
   const res = await fetch(API_BASE + path, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify(body || {}),
   });
+  logApi('info', `POST ${path} -> ${res.status}`);
   if (res.status === 401) {
-    onUnauthorized();
-    throw new Error('Sesion expirada. Vuelve a iniciar sesion.');
+    let detail = 'No autorizado';
+    try {
+      const payload = await res.json();
+      if (payload.detail) detail = payload.detail;
+    } catch (_) {}
+
+    if (!String(path || '').startsWith('/auth/')) {
+      onUnauthorized();
+      logApi('warn', `POST ${path} unauthorized with session reset`);
+      throw new Error('Sesion expirada. Vuelve a iniciar sesion.');
+    }
+    logApi('warn', `POST ${path} unauthorized`, { detail });
+    throw new Error(detail);
   }
 
   if (!res.ok) {
@@ -93,6 +120,7 @@ async function apiPost(path, body) {
       const payload = await res.json();
       if (payload.detail) detail = payload.detail;
     } catch (_) {}
+    logApi('error', `POST ${path} failed`, { status: res.status, detail });
     throw new Error(detail);
   }
   return res.json();

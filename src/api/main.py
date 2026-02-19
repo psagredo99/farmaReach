@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from pathlib import Path
 import requests
+import logging
 
 from src.core.config import (
     GMAIL_ADDRESS,
@@ -34,10 +35,13 @@ from .schemas import (
     HealthResponse,
     LoginRequest,
     LeadResponse,
+    RegisterResponse,
     RegisterRequest,
 )
 
 app = FastAPI(title="Farmacia Backend API", version="1.0.0")
+logger = logging.getLogger("farmareach.auth")
+logger.setLevel(logging.INFO)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -192,9 +196,10 @@ def frontend_verify():
     return FileResponse(verify_path)
 
 
-@app.post("/auth/register", response_model=AuthResponse)
-def register(payload: RegisterRequest) -> AuthResponse:
+@app.post("/auth/register", response_model=RegisterResponse)
+def register(payload: RegisterRequest) -> RegisterResponse:
     email = payload.email.strip().lower()
+    logger.info("register request received email=%s", email)
     if not email:
         raise HTTPException(status_code=400, detail="Email obligatorio")
     _supabase_auth_check()
@@ -207,16 +212,24 @@ def register(payload: RegisterRequest) -> AuthResponse:
     try:
         res = requests.post(url, headers=_supabase_headers(), json=body, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as exc:
+        logger.exception("register network error email=%s", email)
         raise HTTPException(status_code=502, detail=f"Error conectando con Supabase: {exc}") from exc
     if not res.ok:
-        raise HTTPException(status_code=400, detail=_supabase_error_message(res))
-    # For compatibility with existing frontend, perform a login to return access_token.
-    return login(LoginRequest(email=email, password=payload.password))
+        detail = _supabase_error_message(res)
+        logger.warning("register rejected email=%s status=%s detail=%s", email, res.status_code, detail)
+        raise HTTPException(status_code=400, detail=detail)
+    logger.info("register accepted email=%s status=%s", email, res.status_code)
+    return RegisterResponse(
+        email=email,
+        requires_email_verification=True,
+        message="Si hemos enviado un correo de verificacion. Revisa tu email para activar la cuenta antes de iniciar sesion.",
+    )
 
 
 @app.post("/auth/login", response_model=AuthResponse)
 def login(payload: LoginRequest) -> AuthResponse:
     email = payload.email.strip().lower()
+    logger.info("login request received email=%s", email)
     _supabase_auth_check()
     url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
     body = {
@@ -226,15 +239,20 @@ def login(payload: LoginRequest) -> AuthResponse:
     try:
         res = requests.post(url, headers=_supabase_headers(), json=body, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as exc:
+        logger.exception("login network error email=%s", email)
         raise HTTPException(status_code=502, detail=f"Error conectando con Supabase: {exc}") from exc
     if not res.ok:
-        raise HTTPException(status_code=401, detail=_supabase_error_message(res))
+        detail = _supabase_error_message(res)
+        logger.warning("login rejected email=%s status=%s detail=%s", email, res.status_code, detail)
+        raise HTTPException(status_code=401, detail=detail)
     data = res.json()
     token = data.get("access_token")
     user = data.get("user") or {}
     if not token:
+        logger.error("login missing access token email=%s", email)
         raise HTTPException(status_code=401, detail="Supabase no devolvio access_token")
     metadata = user.get("user_metadata") or {}
+    logger.info("login success email=%s", email)
     return AuthResponse(
         access_token=token,
         user={

@@ -77,3 +77,10 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: dict
+
+
+class RegisterResponse(BaseModel):
+    ok: bool = True
+    email: str
+    requires_email_verification: bool = True
+    message: str
