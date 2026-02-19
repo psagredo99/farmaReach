@@ -5,11 +5,18 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from pathlib import Path
+import requests
 
-from src.auth import create_access_token, decode_access_token, hash_password, verify_password
-from src.core.config import GMAIL_ADDRESS, GMAIL_APP_PASSWORD, SERPAPI_KEY
+from src.core.config import (
+    GMAIL_ADDRESS,
+    GMAIL_APP_PASSWORD,
+    REQUEST_TIMEOUT,
+    SERPAPI_KEY,
+    SUPABASE_ANON_KEY,
+    SUPABASE_URL,
+)
 from src.core.db import get_session, init_db
-from src.core.models import EmailLog, Lead, User
+from src.core.models import EmailLog, Lead
 from src.services.collectors.google_maps_serpapi import search_google_maps_farmacias
 from src.services.collectors.openstreetmap_overpass import search_openstreetmap_farmacias
 from src.services.collectors.paginas_amarillas import search_paginas_amarillas_farmacias
@@ -65,16 +72,6 @@ def _lead_to_dict(lead: Lead) -> dict:
     }
 
 
-def _user_to_dict(user: User | dict) -> dict:
-    if isinstance(user, dict):
-        return user
-    return {
-        "id": user.id,
-        "email": user.email,
-        "nombre": user.nombre or "",
-    }
-
-
 def _auth_error() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -82,21 +79,51 @@ def _auth_error() -> HTTPException:
     )
 
 
+def _supabase_headers(with_auth: str = "") -> dict:
+    headers = {
+        "apikey": SUPABASE_ANON_KEY,
+        "Content-Type": "application/json",
+    }
+    if with_auth:
+        headers["Authorization"] = f"Bearer {with_auth}"
+    return headers
+
+
+def _supabase_error_message(res: requests.Response) -> str:
+    try:
+        payload = res.json()
+    except Exception:
+        return f"Supabase error HTTP {res.status_code}"
+    return payload.get("msg") or payload.get("error_description") or payload.get("error") or f"Supabase error HTTP {res.status_code}"
+
+
+def _supabase_auth_check() -> None:
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise HTTPException(status_code=500, detail="Supabase no configurado (SUPABASE_URL/SUPABASE_ANON_KEY)")
+
+
+def _supabase_get_user(token: str) -> dict:
+    _supabase_auth_check()
+    url = f"{SUPABASE_URL}/auth/v1/user"
+    try:
+        res = requests.get(url, headers=_supabase_headers(with_auth=token), timeout=REQUEST_TIMEOUT)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Error conectando con Supabase: {exc}") from exc
+    if not res.ok:
+        raise _auth_error()
+    data = res.json()
+    metadata = data.get("user_metadata") or {}
+    return {
+        "id": data.get("id", ""),
+        "email": data.get("email", ""),
+        "nombre": metadata.get("nombre") or metadata.get("name") or "",
+    }
+
+
 def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> dict:
     if not credentials or credentials.scheme.lower() != "bearer":
         raise _auth_error()
-
-    try:
-        payload = decode_access_token(credentials.credentials)
-        user_id = int(payload.get("sub", ""))
-    except Exception:
-        raise _auth_error()
-
-    with get_session() as session:
-        user = session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
-        if not user:
-            raise _auth_error()
-        return _user_to_dict(user)
+    return _supabase_get_user(credentials.credentials)
 
 
 def _upsert_leads(leads: list[dict], zona_val: str, cp_val: str) -> int:
@@ -132,6 +159,7 @@ def health() -> HealthResponse:
             "gmail_configured": bool(GMAIL_ADDRESS and GMAIL_APP_PASSWORD),
             "openstreetmap_public": True,
             "auth_enabled": True,
+            "supabase_configured": bool(SUPABASE_URL and SUPABASE_ANON_KEY),
         },
     )
 
@@ -149,39 +177,57 @@ def register(payload: RegisterRequest) -> AuthResponse:
     email = payload.email.strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Email obligatorio")
-
-    with get_session() as session:
-        existing = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
-        if existing:
-            raise HTTPException(status_code=409, detail="El usuario ya existe")
-
-        user = User(
-            email=email,
-            password_hash=hash_password(payload.password),
-            nombre=payload.nombre.strip(),
-        )
-        session.add(user)
-        session.flush()
-
-        token = create_access_token(user.id, user.email)
-        return AuthResponse(access_token=token, user=_user_to_dict(user))
+    _supabase_auth_check()
+    url = f"{SUPABASE_URL}/auth/v1/signup"
+    body = {
+        "email": email,
+        "password": payload.password,
+        "data": {"nombre": payload.nombre.strip()},
+    }
+    try:
+        res = requests.post(url, headers=_supabase_headers(), json=body, timeout=REQUEST_TIMEOUT)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Error conectando con Supabase: {exc}") from exc
+    if not res.ok:
+        raise HTTPException(status_code=400, detail=_supabase_error_message(res))
+    # For compatibility with existing frontend, perform a login to return access_token.
+    return login(LoginRequest(email=email, password=payload.password))
 
 
 @app.post("/auth/login", response_model=AuthResponse)
 def login(payload: LoginRequest) -> AuthResponse:
     email = payload.email.strip().lower()
-    with get_session() as session:
-        user = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
-        if not user or not verify_password(payload.password, user.password_hash):
-            raise HTTPException(status_code=401, detail="Credenciales invalidas")
-
-        token = create_access_token(user.id, user.email)
-        return AuthResponse(access_token=token, user=_user_to_dict(user))
+    _supabase_auth_check()
+    url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
+    body = {
+        "email": email,
+        "password": payload.password,
+    }
+    try:
+        res = requests.post(url, headers=_supabase_headers(), json=body, timeout=REQUEST_TIMEOUT)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Error conectando con Supabase: {exc}") from exc
+    if not res.ok:
+        raise HTTPException(status_code=401, detail=_supabase_error_message(res))
+    data = res.json()
+    token = data.get("access_token")
+    user = data.get("user") or {}
+    if not token:
+        raise HTTPException(status_code=401, detail="Supabase no devolvio access_token")
+    metadata = user.get("user_metadata") or {}
+    return AuthResponse(
+        access_token=token,
+        user={
+            "id": user.get("id", ""),
+            "email": user.get("email", email),
+            "nombre": metadata.get("nombre") or metadata.get("name") or "",
+        },
+    )
 
 
 @app.get("/auth/me")
 def me(current_user: dict = Depends(get_current_user)) -> dict:
-    return _user_to_dict(current_user)
+    return current_user
 
 
 @app.get("/template/default")

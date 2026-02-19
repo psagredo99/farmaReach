@@ -32,13 +32,3 @@ class EmailLog(Base):
     estado = Column(String(32), nullable=False)
     detalle = Column(Text, default="")
     created_at = Column(DateTime, server_default=func.now())
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True)
-    email = Column(String(255), nullable=False, unique=True, index=True)
-    password_hash = Column(String(255), nullable=False)
-    nombre = Column(String(255), default="")
-    created_at = Column(DateTime, server_default=func.now())
