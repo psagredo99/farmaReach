@@ -2,19 +2,10 @@
 
 ## Capas
 
-- `src/api`: endpoints HTTP y contratos.
+- `src/api`: endpoints HTTP y esquemas.
 - `src/core`: configuracion, sesion DB y modelos ORM.
 - `src/services`: casos de uso y conectores externos (collectors, mailer, templates).
 
-## Compatibilidad
+## Nota
 
-Para no romper imports existentes, se mantienen wrappers en:
-- `src/config.py`
-- `src/db.py`
-- `src/models.py`
-- `src/lead_service.py`
-- `src/collectors/*`
-- `src/mailer/gmail_sender.py`
-- `src/templates/engine.py`
-
-Estos wrappers reexportan las implementaciones nuevas.
+Se elimino la capa legacy de wrappers para mantener un arbol limpio y una sola ruta de imports.
