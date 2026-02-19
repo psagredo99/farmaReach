@@ -254,7 +254,12 @@
           <p>Farmacias encontradas y su estado de contacto</p>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-ghost" onclick="refreshLeadsTable()"> Recargar tabla</button>
+          <button class="btn btn-ghost btn-icon" onclick="refreshLeadsTable()" title="Recargar leads" aria-label="Recargar leads">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M20 4v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <button class="btn btn-ghost" onclick="exportCSV()"> Exportar CSV</button>
           <button class="btn btn-blue" onclick="selectAll()"> Seleccionar todas</button>
         </div>
