@@ -95,3 +95,13 @@ function exportCSV() {
   a.click();
   showToast('success', 'CSV exportado correctamente');
 }
+
+async function refreshLeadsTable() {
+  try {
+    await loadLeadsFromApi();
+    renderLeadsTable();
+    showToast('success', 'Tabla de leads recargada');
+  } catch (err) {
+    showToast('error', err.message || 'No se pudo recargar la tabla');
+  }
+}
