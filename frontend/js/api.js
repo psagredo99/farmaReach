@@ -1,7 +1,4 @@
-const API_BASE = (
-  window.location.origin.includes('127.0.0.1:8000') ||
-  window.location.origin.includes('localhost:8000')
-) ? '' : 'http://127.0.0.1:8000';
+const API_BASE = (window.__API_BASE__ || '').trim();
 
 function sourceToApi(source) {
   if (source === 'google') return 'google_maps';
