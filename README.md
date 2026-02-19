@@ -53,6 +53,7 @@ Abrir: `http://127.0.0.1:8000/`
 Auth:
 - `auth/*` y `health` son publicos.
 - El resto requiere `Authorization: Bearer <supabase_access_token>`.
+- Los leads se guardan y consultan por usuario autenticado (`owner_id`), por lo que cada cuenta ve solo sus propios leads.
 
 ## Supabase Email Verification (UI)
 

@@ -3,6 +3,7 @@
 
 create table if not exists public.leads (
   id bigserial primary key,
+  owner_id varchar(64) default '' not null,
   nombre varchar(255) not null,
   direccion varchar(500) default '' not null,
   zona varchar(255) default '' not null,
@@ -27,7 +28,11 @@ create table if not exists public.email_logs (
   created_at timestamptz default now() not null
 );
 
+alter table public.leads
+  add column if not exists owner_id varchar(64) default '' not null;
+
 create index if not exists idx_leads_estado_envio on public.leads (estado_envio);
 create index if not exists idx_leads_fuente on public.leads (fuente);
 create index if not exists idx_leads_email on public.leads (email);
+create index if not exists idx_leads_owner_id on public.leads (owner_id);
 create index if not exists idx_email_logs_lead_id on public.email_logs (lead_id);

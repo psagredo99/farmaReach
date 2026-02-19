@@ -8,6 +8,7 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True)
+    owner_id = Column(String(64), nullable=False, default="", index=True)
     nombre = Column(String(255), nullable=False)
     direccion = Column(String(500), default="")
     zona = Column(String(255), default="")

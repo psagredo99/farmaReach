@@ -126,14 +126,26 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     return _supabase_get_user(credentials.credentials)
 
 
-def _upsert_leads(leads: list[dict], zona_val: str, cp_val: str) -> int:
+def _current_user_id(current_user: dict) -> str:
+    owner_id = (current_user.get("id") or "").strip()
+    if not owner_id:
+        raise _auth_error()
+    return owner_id
+
+
+def _upsert_leads(leads: list[dict], zona_val: str, cp_val: str, owner_id: str) -> int:
     saved = 0
     with get_session() as session:
         for lead in leads:
             lead["zona"] = lead.get("zona") or zona_val
             lead["codigo_postal"] = lead.get("codigo_postal") or cp_val
+            lead["owner_id"] = owner_id
             existing = session.execute(
-                select(Lead).where(Lead.nombre == lead["nombre"], Lead.direccion == lead.get("direccion", ""))
+                select(Lead).where(
+                    Lead.owner_id == owner_id,
+                    Lead.nombre == lead["nombre"],
+                    Lead.direccion == lead.get("direccion", ""),
+                )
             ).scalar_one_or_none()
 
             if existing:
@@ -246,7 +258,7 @@ def get_default_template(current_user: dict = Depends(get_current_user)) -> dict
 
 @app.post("/capture", response_model=CaptureResponse)
 def capture_leads(payload: CaptureRequest, current_user: dict = Depends(get_current_user)) -> CaptureResponse:
-    _ = current_user
+    owner_id = _current_user_id(current_user)
     criterio = " ".join(
         [x for x in ["farmacia", payload.zona, payload.codigo_postal, payload.query_extra] if x]
     ).strip()
@@ -266,7 +278,7 @@ def capture_leads(payload: CaptureRequest, current_user: dict = Depends(get_curr
         source_q = payload.zona or payload.codigo_postal or criterio
         results.extend(search_openstreetmap_farmacias(source_q)[: payload.max_items])
 
-    saved = _upsert_leads(results, payload.zona, payload.codigo_postal) if results else 0
+    saved = _upsert_leads(results, payload.zona, payload.codigo_postal, owner_id) if results else 0
     return CaptureResponse(criterio=criterio, found=len(results), saved=saved, results=results, warnings=warnings)
 
 
@@ -279,14 +291,14 @@ def get_leads(
     limit: int = 500,
     current_user: dict = Depends(get_current_user),
 ) -> list[LeadResponse]:
-    _ = current_user
+    owner_id = _current_user_id(current_user)
     if skip < 0:
         raise HTTPException(status_code=400, detail="skip debe ser >= 0")
     if limit < 1 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit debe estar entre 1 y 1000")
 
     with get_session() as session:
-        query = select(Lead)
+        query = select(Lead).where(Lead.owner_id == owner_id)
         if only_pending:
             query = query.where(Lead.estado_envio == "pendiente")
         if require_email:
@@ -300,10 +312,12 @@ def get_leads(
 
 @app.post("/leads/enrich-emails", response_model=EnrichResponse)
 def enrich_missing_emails(current_user: dict = Depends(get_current_user)) -> EnrichResponse:
-    _ = current_user
+    owner_id = _current_user_id(current_user)
     enriched = 0
     with get_session() as session:
-        rows = session.execute(select(Lead).where(Lead.email == "", Lead.website != "")).scalars().all()
+        rows = session.execute(
+            select(Lead).where(Lead.owner_id == owner_id, Lead.email == "", Lead.website != "")
+        ).scalars().all()
         for lead in rows:
             email = find_email_from_website(lead.website)
             if email:
@@ -315,12 +329,12 @@ def enrich_missing_emails(current_user: dict = Depends(get_current_user)) -> Enr
 
 @app.post("/campaign/send", response_model=CampaignResponse)
 def send_campaign(payload: CampaignRequest, current_user: dict = Depends(get_current_user)) -> CampaignResponse:
-    _ = current_user
+    owner_id = _current_user_id(current_user)
     sent = 0
     errors = 0
 
     with get_session() as session:
-        query = select(Lead).where(Lead.email != "")
+        query = select(Lead).where(Lead.owner_id == owner_id, Lead.email != "")
         if payload.only_pending:
             query = query.where(Lead.estado_envio == "pendiente")
         if payload.lead_ids:
