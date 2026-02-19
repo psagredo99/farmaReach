@@ -1,4 +1,4 @@
-from urllib.parse import quote_plus
+ï»¿from urllib.parse import quote_plus
 
 import requests
 from bs4 import BeautifulSoup
@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from src.core.config import REQUEST_TIMEOUT, USER_AGENT
 
 
-# Basado en la estructura pública de resultados de paginasamarillas.es
+# Basado en la estructura publica de resultados de paginasamarillas.es
 # Puede requerir ajustes si el HTML cambia.
 def search_paginas_amarillas_farmacias(zona_o_cp: str) -> list[dict]:
     query = quote_plus(f"farmacia {zona_o_cp}")
@@ -51,3 +51,4 @@ def search_paginas_amarillas_farmacias(zona_o_cp: str) -> list[dict]:
         )
 
     return leads
+
