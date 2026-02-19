@@ -53,3 +53,13 @@ Abrir: `http://127.0.0.1:8000/`
 Auth:
 - `auth/*` y `health` son publicos.
 - El resto requiere `Authorization: Bearer <supabase_access_token>`.
+
+## Supabase Email Verification (UI)
+
+Para evitar redireccion generica tras confirmar email:
+
+1. En Supabase -> `Authentication` -> `URL Configuration`:
+   - `Site URL`: `http://127.0.0.1:8000/verify` (dev) o `https://tu-app.onrender.com/verify` (prod)
+   - `Redirect URLs`: anade ambas rutas (`/verify` y `/` de tu entorno).
+2. En Supabase -> `Authentication` -> `Email` (template de signup), puedes usar:
+   - `docs/supabase_signup_email_template.html`

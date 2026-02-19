@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificacion de cuenta | FarmaReach</title>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --border: #1f2d45;
+      --text: #e8edf5;
+      --muted: #6b7a9a;
+      --ok: #00e5a0;
+      --warn: #f59e0b;
+      --err: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 10%, #12203d, #0a0e17 55%);
+    }
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    p { margin: 0 0 10px; color: var(--muted); line-height: 1.5; }
+    .status { margin: 14px 0 18px; font-size: 15px; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .err { color: var(--err); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    a.btn {
+      display: inline-block;
+      text-decoration: none;
+      color: #081019;
+      background: var(--ok);
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    a.btn.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+    code {
+      display: block;
+      background: #060a12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+      overflow-wrap: anywhere;
+      color: #9ab0d8;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Verificacion de cuenta</h1>
+    <p>Esta pagina procesa la respuesta de Supabase tras confirmar el email.</p>
+    <div id="status" class="status warn">Procesando...</div>
+    <div id="details"></div>
+    <div class="actions">
+      <a class="btn" href="/">Ir a FarmaReach</a>
+      <a class="btn secondary" href="/frontend/index.html">Abrir app</a>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const statusEl = document.getElementById('status');
+      const detailsEl = document.getElementById('details');
+
+      const query = new URLSearchParams(window.location.search);
+      const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+
+      const accessToken = hash.get('access_token');
+      const tokenType = hash.get('token_type');
+      const error = query.get('error') || hash.get('error');
+      const errorDescription = query.get('error_description') || hash.get('error_description');
+
+      if (accessToken && tokenType === 'bearer') {
+        localStorage.setItem('auth_token', accessToken);
+        statusEl.className = 'status ok';
+        statusEl.textContent = 'Cuenta verificada correctamente. Sesion iniciada.';
+        detailsEl.innerHTML = '<p>Ya puedes entrar directamente a la aplicacion.</p>';
+        return;
+      }
+
+      if (error) {
+        statusEl.className = 'status err';
+        statusEl.textContent = 'No se pudo completar la verificacion.';
+        detailsEl.innerHTML = '<p>' + (errorDescription || error) + '</p><code>' + window.location.href + '</code>';
+        return;
+      }
+
+      statusEl.className = 'status warn';
+      statusEl.textContent = 'Verificacion recibida. Si no estas logueado, entra con tu email y password.';
+      detailsEl.innerHTML = '<p>Si vienes de un enlace antiguo, revisa la configuracion de URL en Supabase.</p>';
+    })();
+  </script>
+</body>
+</html>

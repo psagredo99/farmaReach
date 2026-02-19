@@ -172,6 +172,14 @@ def frontend_index():
     return FileResponse(index_path)
 
 
+@app.get("/verify")
+def frontend_verify():
+    verify_path = FRONTEND_DIR / "verify.html"
+    if not verify_path.exists():
+        raise HTTPException(status_code=404, detail="Pagina de verificacion no encontrada")
+    return FileResponse(verify_path)
+
+
 @app.post("/auth/register", response_model=AuthResponse)
 def register(payload: RegisterRequest) -> AuthResponse:
     email = payload.email.strip().lower()

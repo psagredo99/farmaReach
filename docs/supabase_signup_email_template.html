@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Confirma tu cuenta en FarmaReach</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f7fb;font-family:Arial,sans-serif;color:#1f2937;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;">
+          <tr>
+            <td style="padding:24px;">
+              <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25;color:#0f172a;">Confirma tu cuenta</h1>
+              <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#334155;">
+                Hola, gracias por registrarte en <strong>FarmaReach</strong>.
+              </p>
+              <p style="margin:0 0 18px;font-size:15px;line-height:1.55;color:#334155;">
+                Pulsa el boton para confirmar tu email y activar tu cuenta.
+              </p>
+
+              <p style="margin:0 0 22px;">
+                <a href="{{ .ConfirmationURL }}"
+                   style="display:inline-block;padding:12px 18px;background:#00e5a0;color:#06220f;text-decoration:none;border-radius:8px;font-size:14px;font-weight:700;">
+                  Confirmar cuenta
+                </a>
+              </p>
+
+              <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#64748b;">
+                Si el boton no funciona, copia y pega este enlace en tu navegador:
+              </p>
+              <p style="margin:0 0 16px;font-size:12px;line-height:1.55;color:#475569;word-break:break-all;">
+                {{ .ConfirmationURL }}
+              </p>
+
+              <p style="margin:0;font-size:12px;line-height:1.5;color:#94a3b8;">
+                Si no solicitaste este registro, ignora este correo.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
