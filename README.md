@@ -8,9 +8,9 @@ Aplicacion para:
 ## Arquitectura
 
 - Backend API: `FastAPI` (`src/api/main.py`)
-- Frontend web: `frontend/index.html` + `frontend/styles.css` + `frontend/app.js`
+- Frontend web: `frontend/index.html` + `frontend/styles.css` + `frontend/js/*`
 - Persistencia: `SQLAlchemy + SQLite`
-- Captacion: `requests + bs4` (Google Maps via SerpApi / Paginas Amarillas)
+- Captacion: `requests + bs4` (Google Maps via SerpApi / Paginas Amarillas / OpenStreetMap)
 - Envio: `SMTP Gmail`
 
 ## Configuracion
@@ -45,12 +45,19 @@ Notas:
 
 ```text
 FARMACIA/
-  src/                  # Backend y logica de negocio
+  src/
+    api/                # Endpoints FastAPI
+    core/               # Configuracion, DB y modelos
+    services/           # Logica de negocio (collectors, mailer, templates, enrichment)
+    collectors/         # Wrappers legacy (compatibilidad)
+    mailer/             # Wrappers legacy (compatibilidad)
+    templates/          # Wrappers legacy (compatibilidad)
   frontend/
     index.html          # Estructura
     styles.css          # Estilos
     js/                 # JavaScript modular
   app.py                # Frontend Streamlit legacy (opcional)
+  render.yaml           # Deploy Render Blueprint
 ```
 
 ## Ejecucion recomendada
@@ -61,17 +68,15 @@ FARMACIA/
 uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-2. Abrir frontend separado (servido por FastAPI):
+2. Abrir frontend servido por FastAPI:
 
 ```text
 http://127.0.0.1:8000/
 ```
 
-Opcional: puedes abrir `frontend/index.html` con servidor estatico tambien. `frontend/app.js` apunta por defecto a `http://127.0.0.1:8000`.
-
 ## Deploy en Render (recomendado)
 
-Este repositorio ya incluye `render.yaml` para desplegar:
+Este repositorio incluye `render.yaml` para desplegar:
 - 1 servicio web FastAPI (`farmacia-outreach-api`)
 - 1 base de datos Postgres gestionada (`farmacia-outreach-db`)
 
@@ -79,7 +84,7 @@ Pasos:
 1. Sube el proyecto a GitHub.
 2. En Render: `New` -> `Blueprint`.
 3. Conecta el repo y selecciona este proyecto.
-4. Render leerá `render.yaml` y propondrá crear backend + DB.
+4. Render leera `render.yaml` y propondra crear backend + DB.
 5. Tras el deploy, abre la URL del servicio (ej: `https://tu-servicio.onrender.com/`).
 
 Variables a configurar en Render (Environment):
@@ -113,13 +118,6 @@ Notas API:
 - `GET /leads` soporta `only_pending`, `require_email`, `fuente`, `skip`, `limit`.
 - `POST /capture` puede devolver `warnings` si falta configuracion (por ejemplo, `SERPAPI_KEY`).
 - En `capture`, `fuente` soporta: `openstreetmap`, `google_maps`, `paginas_amarillas`, `ambas`, `todas`.
-
-## Flujo de uso
-
-1. En la pestana Captacion, define zona/codigo postal y fuente.
-2. Guarda leads en base local.
-3. En Leads, enriquece emails desde la web del negocio cuando falten.
-4. En Envio de correos, define asunto + plantilla con variables y ejecuta campana.
 
 ## Variables de plantilla
 

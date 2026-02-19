@@ -7,15 +7,15 @@ from sqlalchemy import select
 from pathlib import Path
 
 from src.auth import create_access_token, decode_access_token, hash_password, verify_password
-from src.collectors.google_maps_serpapi import search_google_maps_farmacias
-from src.collectors.openstreetmap_overpass import search_openstreetmap_farmacias
-from src.collectors.paginas_amarillas import search_paginas_amarillas_farmacias
-from src.config import GMAIL_ADDRESS, GMAIL_APP_PASSWORD, SERPAPI_KEY
-from src.db import get_session, init_db
-from src.lead_service import find_email_from_website
-from src.mailer.gmail_sender import send_gmail
-from src.models import EmailLog, Lead, User
-from src.templates.engine import DEFAULT_TEMPLATE, render_email
+from src.core.config import GMAIL_ADDRESS, GMAIL_APP_PASSWORD, SERPAPI_KEY
+from src.core.db import get_session, init_db
+from src.core.models import EmailLog, Lead, User
+from src.services.collectors.google_maps_serpapi import search_google_maps_farmacias
+from src.services.collectors.openstreetmap_overpass import search_openstreetmap_farmacias
+from src.services.collectors.paginas_amarillas import search_paginas_amarillas_farmacias
+from src.services.lead_enrichment import find_email_from_website
+from src.services.mailer import send_gmail
+from src.services.template_engine import DEFAULT_TEMPLATE, render_email
 
 from .schemas import (
     AuthResponse,
