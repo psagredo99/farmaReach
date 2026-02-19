@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: farmacia-outreach-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: DB_URL
+        fromDatabase:
+          name: farmacia-outreach-db
+          property: connectionString
+      - key: SERPAPI_KEY
+        sync: false
+      - key: GMAIL_ADDRESS
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: REQUEST_TIMEOUT
+        value: "20"
+
+databases:
+  - name: farmacia-outreach-db
+    databaseName: farmacia
+    user: farmacia_user

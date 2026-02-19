@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmaReach  Automatizacion de Outreach</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/frontend/styles.css">
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="wrapper">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">⚕ FarmaReach</div>
+      <div class="logo-sub">Outreach Automation</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="switchSection('dashboard', this)">
+        <span class="icon">◈</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="switchSection('scraping', this)">
+        <span class="icon">⊙</span> Busqueda de Leads
+      </div>
+      <div class="nav-item" onclick="switchSection('leads', this)">
+        <span class="icon">⊟</span> CaptTable
+        <span class="nav-badge" id="badge-count">0</span>
+      </div>
+      <div class="nav-item" onclick="switchSection('template', this)">
+        <span class="icon">◫</span> Plantillas Email
+      </div>
+      <div class="nav-item" onclick="switchSection('envio', this)">
+        <span class="icon">▷</span> Envio & Config
+      </div>
+      <div class="nav-item" onclick="switchSection('historial', this)">
+        <span class="icon">⊾</span> Historial
+      </div>
+    </nav>
+    <div class="sidebar-stats">
+      <div class="stat-mini">Leads encontrados: <span id="sb-total">0</span></div>
+      <div class="stat-mini">Emails enviados: <span id="sb-sent">0</span></div>
+      <div class="stat-mini">Tasa apertura: <span id="sb-rate"></span></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">
+        Dashboard
+        <small>Resumen general del proceso de outreach</small>
+      </div>
+      <div class="topbar-actions">
+        <span id="current-user" style="font-size:11px; color:var(--muted);">Sin sesion</span>
+        <span style="font-size:11px; color:var(--muted); display:flex; align-items:center; gap:6px;">
+          <span class="pulse-dot"></span> Sistema activo
+        </span>
+        <button class="btn btn-ghost" onclick="logoutUser()">Cerrar sesion</button>
+        <button class="btn btn-primary" onclick="switchSection('scraping', document.querySelectorAll('.nav-item')[1])">
+           Nueva busqueda
+        </button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="section active fade-in" id="section-dashboard">
+      <div class="grid-4" style="margin-bottom:24px;">
+        <div class="stat-card" style="--accent-color: var(--accent);">
+          <div class="stat-number" id="stat-total">0</div>
+          <div class="stat-label">Farmacias encontradas</div>
+          <div class="stat-delta up" id="stat-new-leads"></div>
+        </div>
+        <div class="stat-card" style="--accent-color: var(--accent2);">
+          <div class="stat-number" id="stat-emails">0</div>
+          <div class="stat-label">Emails listos para enviar</div>
+        </div>
+        <div class="stat-card" style="--accent-color: var(--success);">
+          <div class="stat-number" id="stat-sent">0</div>
+          <div class="stat-label">Enviados hoy</div>
+          <div class="stat-delta up" id="stat-sent-delta"></div>
+        </div>
+        <div class="stat-card" style="--accent-color: var(--accent3);">
+          <div class="stat-number" id="stat-rate"></div>
+          <div class="stat-label">Tasa de conversion</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"> Inicio Rapido <span class="tag">workflow</span></div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; align-items:center; gap:12px; padding:12px; background:var(--surface2); border-radius:8px; cursor:pointer;" onclick="switchSection('scraping', document.querySelectorAll('.nav-item')[1])">
+              <div style="width:32px;height:32px;background:rgba(0,229,160,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:16px;">1</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Buscar farmacias</div>
+                <div style="font-size:11px;color:var(--muted);">Define zona, CP y parametros de busqueda</div>
+              </div>
+               <div style="margin-left:auto;color:var(--muted);">→</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding:12px; background:var(--surface2); border-radius:8px; cursor:pointer;" onclick="switchSection('template', document.querySelectorAll('.nav-item')[3])">
+              <div style="width:32px;height:32px;background:rgba(14,165,233,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:16px;">2</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Configurar plauntilla</div>
+                <div style="font-size:11px;color:var(--muted);">Personaliza el email con variables dinamicas</div>
+              </div>
+               <div style="margin-left:auto;color:var(--muted);">→</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding:12px; background:var(--surface2); border-radius:8px; cursor:pointer;" onclick="switchSection('envio', document.querySelectorAll('.nav-item')[4])">
+              <div style="width:32px;height:32px;background:rgba(245,158,11,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent3);font-size:16px;">3</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;">Launzar campauna</div>
+                <div style="font-size:11px;color:var(--muted);">Conecta Gmail y enva los emails</div>
+              </div>
+               <div style="margin-left:auto;color:var(--muted);">→</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"> ltimas actividades <span class="tag">log</span></div>
+          <div class="terminal" id="activity-log">
+            <div class="log-line info"><span class="ts">[sistema]</span> FarmaReach inicializado correctamente</div>
+            <div class="log-line"><span class="ts">[info]</span> Listo para comenzar busqueda de leads</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRAPING -->
+    <div class="section fade-in" id="section-scraping">
+      <div class="section-header">
+        <div>
+          <h2> Busqueda de Leads</h2>
+          <p>Define los parametros para encontrar farmacias en tu zona objetivo</p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title"> Fuente de datos</div>
+          <div class="source-grid">
+            <div class="source-card" id="src-google" onclick="selectSource('google')">
+              <div class="src-icon">🗺️</div>
+              <div class="src-name">Google Maps</div>
+              <div class="src-desc">API Places</div>
+            </div>
+            <div class="source-card" id="src-paginas" onclick="selectSource('paginas')">
+              <div class="src-icon">📖</div>
+              <div class="src-name">Paginas Amarillas</div>
+              <div class="src-desc">Web scraping</div>
+            </div>
+            <div class="source-card selected" id="src-openstreetmap" onclick="selectSource('openstreetmap')">
+              <div class="src-icon">🌍</div>
+              <div class="src-name">OpenStreetMap</div>
+              <div class="src-desc">Nominatim + Overpass</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"> Configuracion de busqueda</div>
+          <div class="form-group">
+            <label class="form-label">Busqueda por</label>
+            <select class="form-input" id="search-type" onchange="toggleSearchType()">
+              <option value="cp">Codigo Postal</option>
+              <option value="ciudad">Ciudad / Municipio</option>
+              <option value="zona">Zona / Barrio</option>
+              <option value="radio">Radio desde punto (km)</option>
+            </select>
+          </div>
+          <div id="cp-group" class="form-group">
+            <label class="form-label">Codigo(s) Postal(es)</label>
+            <input type="text" id="cp-input" class="form-input" placeholder="28001, 28002, 08001...">
+            <div class="form-hint">Separa mltiples CPs con comas</div>
+          </div>
+          <div id="ciudad-group" class="form-group" style="display:none;">
+            <label class="form-label">Ciudad</label>
+            <input type="text" id="ciudad-input" class="form-input" placeholder="Madrid, Barcelona, Valencia...">
+          </div>
+          <div id="zona-group" class="form-group" style="display:none;">
+            <label class="form-label">Zona o barrio</label>
+            <input type="text" id="zona-input" class="form-input" placeholder="Salamaunca, Gracia, El Eixample...">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"> Filtros avaunzados</div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label">Tipo de farmacia</label>
+            <select class="form-input" id="filter-tipo">
+              <option value="all">Todas</option>
+              <option value="independiente">Independiente</option>
+              <option value="cadena">Cadena / Fraunquicia</option>
+              <option value="guardia">24h / Guardia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valoracin mnima</label>
+            <select class="form-input" id="filter-rating">
+              <option value="0">Sin filtro</option>
+              <option value="3">3+ estrellas</option>
+              <option value="4">4+ estrellas</option>
+              <option value="4.5">4.5+ estrellas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mximo de resultados</label>
+            <select class="form-input" id="filter-max">
+              <option value="20">20 farmacias</option>
+              <option value="50" selected>50 farmacias</option>
+              <option value="100">100 farmacias</option>
+              <option value="200">200 farmacias</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+          <label class="cb"><input type="checkbox" id="filter-email" checked> <span>Solo con email disponible</span></label>
+          <label class="cb"><input type="checkbox" id="filter-tel"> <span>Solo con telefono</span></label>
+          <label class="cb"><input type="checkbox" id="filter-web"> <span>Solo con sitio web</span></label>
+          <label class="cb"><input type="checkbox" id="filter-nocontact"> <span>Excluir ya contactadas</span></label>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;" id="progress-card" style="display:none;">
+        <div class="card-title"> Progreso de busqueda</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:13px;" id="progress-text">Preparando busqueda...</span>
+          <span style="font-size:13px; color:var(--accent);" id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="terminal" style="margin-top:12px;" id="scraping-log"></div>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" id="btn-scrape" onclick="startScraping()">
+           Iniciar busqueda
+        </button>
+        <button class="btn btn-ghost" onclick="resetScraping()"> Limpiar</button>
+      </div>
+    </div>
+
+    <!-- LEADS TABLE -->
+    <div class="section fade-in" id="section-leads">
+      <div class="section-header">
+        <div>
+          <h2> CaptTable de Leads</h2>
+          <p>Farmacias encontradas y su estado de contacto</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" onclick="exportCSV()"> Exportar CSV</button>
+          <button class="btn btn-blue" onclick="selectAll()"> Seleccionar todas</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <input type="text" class="form-input" id="leads-search" placeholder="  Buscar farmacia, ciudad, email..." style="max-width:280px;" oninput="filterLeads()">
+          <select class="form-input" id="leads-filter-status" style="max-width:160px;" onchange="filterLeads()">
+            <option value="">Todos los estados</option>
+            <option value="new">Nuevo</option>
+            <option value="pending">Pendiente</option>
+            <option value="sent">Enviado</option>
+            <option value="error">Error</option>
+          </select>
+          <span style="font-size:13px;color:var(--muted);margin-left:auto;" id="leads-count-label">0 farmacias</span>
+        </div>
+      </div>
+
+      <div id="leads-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon"></div>
+        <p>No hay leads aun. Realiza una busqueda primero.</p>
+        <button class="btn btn-primary" style="margin-top:16px;" onclick="switchSection('scraping', document.querySelectorAll('.nav-item')[1])">Ir a busqueda</button>
+      </div>
+
+      <div class="table-wrap" id="leads-table-wrap">
+        <table id="leads-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="cb-all" onchange="toggleAll(this)"></th>
+              <th>Farmacia</th>
+              <th>Ciudad</th>
+              <th>CP</th>
+              <th>Telfono</th>
+              <th>Email</th>
+              <th>Rating</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TEMPLATE -->
+    <div class="section fade-in" id="section-template">
+      <div class="section-header">
+        <div>
+          <h2> Plauntilla de Email</h2>
+          <p>Disena el mensaje usando variables dinamicas para personalizar cada envio</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-title"> Variables disponibles</div>
+            <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Haz clic para insertar en la plauntilla</p>
+            <div class="tags">
+              <span class="template-var" onclick="insertVar('{{nombre_farmacia}}')">{nombre_farmacia}</span>
+              <span class="template-var" onclick="insertVar('{{farmaceutico}}')">{farmaceutico}</span>
+              <span class="template-var" onclick="insertVar('{{ciudad}}')">{ciudad}</span>
+              <span class="template-var" onclick="insertVar('{{codigo_postal}}')">{codigo_postal}</span>
+              <span class="template-var" onclick="insertVar('{{direccion}}')">{direccion}</span>
+              <span class="template-var" onclick="insertVar('{{telefono}}')">{telefono}</span>
+              <span class="template-var" onclick="insertVar('{{rating}}')">{rating}</span>
+              <span class="template-var" onclick="insertVar('{{fecha_hoy}}')">{fecha_hoy}</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"> Editor de plauntilla</div>
+            <div class="form-group">
+              <label class="form-label">Nombre de la plauntilla</label>
+              <input type="text" id="tpl-name" class="form-input" placeholder="Mi campauna de farmacias" value="Campaa Outreach Farmacias">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Asunto del email</label>
+              <input type="text" id="tpl-subject" class="form-input" value="Propuesta de colaboracin para {{nombre_farmacia}} en {{ciudad}}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cuerpo del mensaje</label>
+              <textarea id="tpl-body" class="form-input" style="min-height:220px;">Estimado equipo de {{nombre_farmacia}},
+
+Me pongo en contacto con ustedes desde [TU EMPRESA] para presentarles una oportunidad de colaboracin pensada especficamente para farmacias como la suya en {{ciudad}}.
+
+Hemos desarrollado una solucin que permite a farmacias independientes [DESCRIPCIN DE TU PROPUESTA], ayudaundo a mejorar la gestin y rentabilidad del negocio.
+
+Nos gustaria agendar una breve llamada de 15 minutos para explicarles como podria beneficiar a {{nombre_farmacia}}. Tienen disponibilidad esta semana?
+
+Quedamos a su disposicin.
+
+Un saludo cordial,
+[TU NOMBRE]
+[TU EMPRESA] | [TELFONO]</textarea>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="saveTemplate()"> Guardar plauntilla</button>
+              <button class="btn btn-ghost" onclick="previewTemplate()"> Vista previa</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-title"> Preview del email <span class="tag">muestra con datos reales</span></div>
+            <div id="email-preview" style="background:var(--bg);border-radius:8px;padding:20px;border:1px solid var(--border);">
+              <div style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">DE:</div>
+                <div style="font-size:13px;" id="prev-from">tu@gmail.com</div>
+                <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">ASUNTO:</div>
+                <div style="font-size:14px;font-weight:600;" id="prev-subject"></div>
+              </div>
+              <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--text);" id="prev-body">
+                Configura la plauntilla y haz clic en "Vista previa" para ver el resultado.
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="card-title" style="margin-bottom:12px;"> Plantillas guardadas</div>
+            <div id="saved-templates">
+              <div style="font-size:13px;color:var(--muted);padding:8px 0;">No hay plauntillas guardadas aun</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENVO -->
+    <div class="section fade-in" id="section-envio">
+      <div class="section-header">
+        <div>
+          <h2> Configuracion y Envio</h2>
+          <p>Conecta tu cuenta de Gmail y launza la campauna de outreach</p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title"> Configuracion Gmail</div>
+
+          <div class="gmail-setup">
+            <div class="gmail-title"> Configuracion requerida (App Password)</div>
+            <p>Para enviar desde Gmail, necesitas una <strong>App Password</strong>:<br>
+            1. Ve a <code>myaccount.google.com/security</code><br>
+            2. Activa verificacin en 2 pasos<br>
+            3. En "App passwords", genera una para "Mail"<br>
+            4. Usa esa contrasea de 16 dgitos abajo</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tu direccin Gmail</label>
+            <input type="email" id="gmail-from" class="form-input" placeholder="tu@gmail.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">App Password (16 dgitos)</label>
+            <input type="password" id="gmail-pass" class="form-input" placeholder="xxxx xxxx xxxx xxxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre del remitente</label>
+            <input type="text" id="gmail-name" class="form-input" placeholder="Tu Nombre  Tu Empresa">
+          </div>
+          <button class="btn btn-blue" onclick="testGmail()"> Probar conexin</button>
+          <span id="gmail-status" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+        </div>
+
+        <div class="card">
+          <div class="card-title"> Parametros de envio</div>
+          <div class="form-group">
+            <label class="form-label">Plauntilla a usar</label>
+            <select class="form-input" id="send-template">
+              <option value=""> Selecciona una plauntilla </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Delay entre emails (segundos)</label>
+            <input type="number" id="send-delay" class="form-input" value="30" min="5" max="120">
+            <div class="form-hint">Recomendado: 30-60s para evitar lmites de Gmail</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mximo emails por da</label>
+            <input type="number" id="send-limit" class="form-input" value="100" min="1" max="500">
+            <div class="form-hint">Gmail permite ~500/da para cuentas normales</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Horario de envio</label>
+            <div class="grid-2">
+              <input type="time" id="send-from" class="form-input" value="09:00">
+              <input type="time" id="send-to" class="form-input" value="18:00">
+            </div>
+          </div>
+          <label class="cb" style="margin-top:8px;"><input type="checkbox" id="send-test"> <span>Enviar email de prueba primero</span></label>
+        </div>
+      </div>
+
+      <!-- Campaign summary -->
+      <div class="card" style="margin-bottom:20px;" id="campaign-summary">
+        <div class="card-title"> Resumen de campauna</div>
+        <div class="grid-4">
+          <div>
+            <div style="font-size:12px;color:var(--muted);">Leads seleccionados</div>
+            <div style="font-size:24px;font-weight:700;font-family:'Syne',sauns-serif;color:var(--accent);" id="cs-selected">0</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);">Con email</div>
+            <div style="font-size:24px;font-weight:700;font-family:'Syne',sauns-serif;color:var(--accent2);" id="cs-email">0</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);">Tiempo estimado</div>
+            <div style="font-size:24px;font-weight:700;font-family:'Syne',sauns-serif;" id="cs-time"></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);">Estado</div>
+            <div id="cs-status"><span class="badge badge-pending">Pendiente</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Send progress -->
+      <div class="card" id="send-progress-card" style="display:none;margin-bottom:20px;">
+        <div class="card-title"> Enviaundo emails...</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;" id="send-progress-text">Iniciando...</span>
+          <span style="font-size:13px;color:var(--accent);" id="send-progress-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="send-progress-fill" style="width:0%"></div></div>
+        <div class="terminal" style="margin-top:12px;" id="send-log"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" id="btn-send" onclick="startCampaign()" style="font-size:15px;padding:12px 28px;">
+           Launzar campauna
+        </button>
+        <button class="btn btn-ghost" onclick="pauseCampaign()" id="btn-pause" disabled> Pausar</button>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="section fade-in" id="section-historial">
+      <div class="section-header">
+        <div>
+          <h2> Historial de envios</h2>
+          <p>Registro de todos los emails enviados</p>
+        </div>
+        <button class="btn btn-ghost" onclick="clearHistory()"> Limpiar historial</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Farmacia</th>
+              <th>Email enviado a</th>
+              <th>Asunto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="historial-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px;">No hay envios registrados aun</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="auth-overlay" id="auth-overlay" style="display:none;">
+  <div class="auth-card">
+    <h2>Acceso a FarmaReach</h2>
+    <p>Inicia sesion o crea una cuenta para usar la aplicacion.</p>
+    <div class="auth-tabs">
+      <button id="auth-tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+      <button id="auth-tab-register" class="auth-tab" onclick="switchAuthTab('register')">Registro</button>
+    </div>
+
+    <div id="auth-login-form">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="auth-login-email" type="email" class="form-input" placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="auth-login-password" type="password" class="form-input" placeholder="********">
+      </div>
+      <button class="btn btn-primary" onclick="loginUser()">Entrar</button>
+    </div>
+
+    <div id="auth-register-form" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input id="auth-register-name" type="text" class="form-input" placeholder="Tu nombre">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input id="auth-register-email" type="email" class="form-input" placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password (min 8)</label>
+        <input id="auth-register-password" type="password" class="form-input" placeholder="********">
+      </div>
+      <button class="btn btn-primary" onclick="registerUser()">Crear cuenta</button>
+    </div>
+
+    <div id="auth-status" class="auth-status"></div>
+  </div>
+</div>
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Mensaje</span>
+</div>
+
+<script src="/frontend/js/state.js"></script>
+<script src="/frontend/js/ui.js"></script>
+<script src="/frontend/js/leads.js"></script>
+<script src="/frontend/js/history.js"></script>
+<script src="/frontend/js/template.js"></script>
+<script src="/frontend/js/campaign.js"></script>
+<script src="/frontend/js/api.js"></script>
+<script src="/frontend/js/auth.js"></script>
+<script src="/frontend/js/init.js"></script>
+</body>
+</html>
+

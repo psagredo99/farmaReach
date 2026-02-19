@@ -1,0 +1,3 @@
+updateStats();
+previewTemplate();
+bootstrapAuth();
